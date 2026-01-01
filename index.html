@@ -15,7 +15,7 @@ body,html{margin:0;padding:0;height:100%;overflow:hidden;font-family:'Tajawal',s
 .quote{color:#e2e8f0;margin-bottom:20px}
 .counter{font-size: 1.3rem; margin-bottom: 20px;}
 
-/* تعديل لون عدد الأيام للأبيض */
+/* لون عدد الأيام - أبيض */
 #days {
     font-weight: bold; 
     color: #ffffff; 
@@ -25,7 +25,7 @@ body,html{margin:0;padding:0;height:100%;overflow:hidden;font-family:'Tajawal',s
 
 #secret{margin-top:20px;font-style:italic;color:#f87171;min-height:24px}
 
-/* تعديل لون الرسالة السرية للأبيض عند ظهورها */
+/* لون الرسالة السرية - أبيض */
 .hasMsg {
     color: #ffffff !important; 
     font-weight: bold;
@@ -76,14 +76,18 @@ async function init(){
  if(!snap.exists()){
    n1 = prompt("Your name:");
    n2 = prompt("Your best friend's name:");
-   dateStr = prompt("Friendship start date (YYYY-MM-DD):", "2023-01-01");
+   // طلب التاريخ بالصيغة الجديدة
+   dateStr = prompt("Friendship start date (YYYY/MM/DD):", "2023/01/01");
 
    if(!n1 || !n2 || !dateStr) return;
+
+   // تحويل أي شرطة إلى مائل قبل الحفظ لضمان التوافق
+   const cleanDate = String(dateStr).replace(/-/g, "/");
 
    await setDoc(ref,{
      name1: String(n1),
      name2: String(n2),
-     startDate: String(dateStr)
+     startDate: cleanDate
    });
 
    location.reload();
@@ -98,6 +102,7 @@ async function init(){
  document.querySelector(".names").innerText = `${n1} & ${n2}`;
 
  function calculateDays(inputDate) {
+    // معالجة التاريخ ليعمل على كل المتصفحات
     const formattedDate = inputDate.replace(/-/g, "/");
     const start = new Date(formattedDate);
     const today = new Date();
