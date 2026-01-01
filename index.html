@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Best Friends ✩</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap');
+body,html{margin:0;padding:0;height:100%;overflow:hidden;font-family:'Tajawal',sans-serif;background:#0a0a2e}
+.main{width:100%;height:100vh;display:flex;justify-content:center;align-items:center;position:relative;background:linear-gradient(to right,#0a0a2e,#161b44,#1a1a3a)}
+.star{position:absolute;background:#fff;border-radius:50%;opacity:.7;animation:fall linear infinite}
+@keyframes fall{from{transform:translateY(-10vh)}to{transform:translateY(110vh)}}
+.card{text-align:center;color:white;z-index:10;padding:20px}
+.names{font-size:2.5rem;text-shadow: 0 0 15px rgba(255,255,255,0.3);margin-bottom:10px}
+.quote{color:#e2e8f0;margin-bottom:20px}
+.counter{font-size: 1.3rem; margin-bottom: 20px;}
+#days{font-weight: bold; color: #fbbf24; font-size: 1.8rem; text-shadow: 0 0 10px rgba(251,191,36,0.4);}
+#secret{margin-top:20px;font-style:italic;color:#f87171;min-height:24px}
+.hasMsg{color:#4ade80 !important; font-weight: bold;}
+button{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.3);color:white;padding:10px 20px;border-radius:20px;cursor:pointer;transition:0.3s}
+button:hover{background:rgba(255,255,255,0.2)}
+</style>
+</head>
+<body>
+
+<div class="main" id="stars">
+ <div class="card">
+  <h1 class="names">Best Friends</h1>
+  <p class="quote">✩ A friendship written in the stars ✩</p>
+  <div class="counter">Friends for <span id="days">...</span> days</div>
+  <button id="btn">Secret Message</button>
+  <p id="secret">No secret message yet...</p>
+ </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
+import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
+
+// إعدادات فايربيس الخاصة بك
+const firebaseConfig = {
+ apiKey:"AIzaSyBBgLIAUqoTaTs8EaVkHhFbDimBYx6vUfc",
+ authDomain:"best-friend-cl.firebaseapp.com",
+ projectId:"best-friend-cl"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const id = new URLSearchParams(location.search).get("id");
+if(!id){
+ alert("Please use a valid link 💫");
+ throw "No ID provided";
+}
+
+async function init(){
+ const ref = doc(db,"friends",id);
+ const snap = await getDoc(ref);
+
+ let n1, n2, dateStr;
+
+ if(!snap.exists()){
+   n1 = prompt("Your name:");
+   n2 = prompt("Your best friend's name:");
+   dateStr = prompt("Friendship start date (YYYY-MM-DD):", "2023-01-01");
+
+   if(!n1 || !n2 || !dateStr) return;
+
+   await setDoc(ref,{
+     name1: String(n1),
+     name2: String(n2),
+     startDate: String(dateStr)
+   });
+
+   location.reload();
+   return;
+ } else {
+   const data = snap.data();
+   n1 = data.name1;
+   n2 = data.name2;
+   dateStr = data.startDate;
+ }
+
+ // عرض الأسماء
+ document.querySelector(".names").innerText = `${n1} & ${n2}`;
+
+ // --- الحل النهائي لمشكلة الآيفون والآيباد ---
+ function calculateDays(inputDate) {
+    // استبدال الشرطة بمائل لأن متصفح سفاري لا يقبل إلا هذا التنسيق
+    const formattedDate = inputDate.replace(/-/g, "/");
+    const start = new Date(formattedDate);
+    const today = new Date();
+
+    // التأكد من صحة التاريخ
+    if (isNaN(start.getTime())) return "0";
+
+    // تصفير الوقت للمقارنة بالأيام فقط
+    start.setHours(0,0,0,0);
+    today.setHours(0,0,0,0);
+
+    const diffTime = today.getTime() - start.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+    return diffDays < 0 ? 0 : diffDays;
+ }
+
+ // تحديث العداد في الصفحة
+ document.getElementById("days").innerText = calculateDays(dateStr);
+
+ // مراقبة الرسائل السرية
+ onSnapshot(doc(db,"messages",id), s => {
+  const box = document.getElementById("secret");
+  if(s.exists()){
+    box.classList.add("hasMsg");
+    box.innerText = s.data().text;
+  } else {
+    box.classList.remove("hasMsg");
+    box.innerText = "No secret message yet...";
+  }
+ });
+}
+
+init();
+
+// إرسال رسالة جديدة
+document.getElementById("btn").onclick = async()=>{
+ const ref = doc(db,"messages",id);
+ const snap = await getDoc(ref);
+ const todayStr = new Date().toISOString().split("T")[0];
+
+ let count = 0, last = "";
+ if(snap.exists()){
+   count = snap.data().count || 0;
+   last  = snap.data().lastDate || "";
+ }
+
+ if(last === todayStr && count >= 5){
+   alert("Daily limit reached (5 messages)");
+   return;
+ }
+
+ const msg = prompt("Write your secret message (200 chars)");
+ if(!msg) return;
+
+ await setDoc(ref,{
+   text: msg.slice(0,200),
+   count: last === todayStr ? count + 1 : 1,
+   lastDate: todayStr
+ });
+};
+
+// خلفية النجوم المتساقطة
+for(let i=0; i<70; i++){
+ const star = document.createElement("div");
+ star.className = "star";
+ const size = Math.random() * 2 + 1;
+ star.style.width = star.style.height = size + "px";
+ star.style.left = Math.random() * 100 + "%";
+ star.style.top = Math.random() * 100 + "%";
+ star.style.animationDuration = (Math.random() * 10 + 10) + "s";
+ star.style.animationDelay = Math.random() * 8 + "s";
+ document.getElementById("stars").appendChild(star);
+}
+</script>
+</body>
+</html>
